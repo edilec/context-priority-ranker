@@ -1,0 +1,17 @@
+{
+  "name": "context-priority-ranker",
+  "version": "0.0.0",
+  "description": "Rank context by task relevance, authority and freshness before assembly.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/context-priority-ranker"
+  }
+}
