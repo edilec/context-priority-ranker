@@ -1,17 +1,53 @@
 {
   "name": "context-priority-ranker",
-  "version": "0.0.0",
-  "description": "Rank context by task relevance, authority and freshness before assembly.",
+  "version": "0.1.0",
+  "description": "Rank supplied context items by configured authority, declared relevance, freshness and resolved evidence links, so that relevance cannot buy authority and stale governing context is flagged for review.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test"
+    "lint": "for file in bin/*.mjs src/*.mjs test/*.mjs; do node --check \"$file\" || exit 1; done",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/context-priority-ranker.mjs --root examples/assembled --policy examples/policy.json --today 2026-09-14",
+    "example:failing": "node bin/context-priority-ranker.mjs --root examples/stale --policy examples/policy.json --today 2026-09-14; test $? -eq 1",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run example:failing && npm run pack:check"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/edilec/context-priority-ranker"
-  }
+    "url": "git+https://github.com/edilec/context-priority-ranker.git"
+  },
+  "bin": {
+    "context-priority-ranker": "./bin/context-priority-ranker.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "context",
+    "ranking",
+    "authority",
+    "freshness",
+    "prompt-assembly",
+    "agent",
+    "static-analysis",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/context-priority-ranker/issues"
+  },
+  "homepage": "https://github.com/edilec/context-priority-ranker#readme"
 }
