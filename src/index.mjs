@@ -48,7 +48,7 @@ export {
 } from './score.mjs'
 export {
   CONTROL_CLASSES, byCodeUnit, decodeUtf8, escapePointerSegment, excerpt, hasForbiddenCharacter,
-  isPlainObject, parseFailureDetail,
+  isPlainObject, parseFailureDetail, renderable,
 } from './text.mjs'
 
 export const TOOL_ID = 'context-priority-ranker'
@@ -485,7 +485,10 @@ function compileItem(run, policy, limits, item, index) {
         pointer: `${pointer}/updated`,
         ruleId: 'updated-invalid',
         message: 'This item\'s "updated" is not a YYYY-MM-DD calendar date, so its freshness could not be determined.',
-        evidence: `updated ${excerpt(String(item.updated), 40)}`,
+        // Not `String(item.updated)`: a value carrying a non-callable
+        // `toString` throws there and would cost the whole report. `excerpt`
+        // describes such a value by its shape instead.
+        evidence: `updated ${excerpt(item.updated, 40)}`,
         suggestion: 'Write the date as YYYY-MM-DD; a lenient parser would read 2026-02-30 as 2 March.',
       })
       compiled.scored = false
@@ -814,7 +817,7 @@ export async function rankContext(options = {}) {
     run.addUnknown({
       pointer: '/schemaVersion',
       ruleId: 'schema-version-unsupported',
-      message: `This build understands context-set schemaVersion "${SUPPORTED_DOCUMENT_VERSION}"; the document declares "${excerpt(String(document.schemaVersion), 40)}". It was not interpreted.`,
+      message: `This build understands context-set schemaVersion "${SUPPORTED_DOCUMENT_VERSION}"; the document declares "${excerpt(document.schemaVersion, 40)}". It was not interpreted.`,
       suggestion: 'Rank the document with a build that understands its schema version.',
     })
     return buildReport(run, state, limits)
