@@ -155,6 +155,24 @@ summary and diagnostics. The report follows the house contract:
 }
 ```
 
+### Credential-shaped strings are replaced, not reproduced
+
+A context set is assembled from retrieved material and pasted commands, and this
+tool reproduces parts of it: an item id and a source name reach `ranking` and the
+human summary, and an unmapped source reaches a finding's message and its
+evidence. Every one of those routes goes through one boundary, and anything
+matching a published credential shape is replaced there with a placeholder
+naming the shape:
+
+```
+"The policy maps no band to source "[redacted github-token]", so this item's
+ authority is unknown."
+```
+
+The replacement happens before any length bound is applied, so no truncation can
+cut a credential back into the report. A redacted id no longer matches the id in
+your input; that is the trade, and it is the right way round.
+
 Findings sort by `(location.file, location.pointer, ruleId, message)`. Pointers
 compare as strings, so `/items/10` precedes `/items/9`. The ranking sorts by
 `(band rank, score descending, id)`. All comparisons are by UTF-16 code unit;
@@ -228,6 +246,10 @@ worse than no tool.
   miss anything phrased differently, and it flags a security README that quotes
   one. It changes nothing about the ranking either way — an untrusted item ranks
   below every trusted one whether or not it says anything at all.
+- **It is not a secret scanner.** Credential redaction is a fixed list of ten
+  published prefix shapes with no entropy heuristic and no allowlist. It will
+  miss a bespoke token, and a token glued to a prefix (`token_ghp_...`) does not
+  match. It exists to stop the realistic accident, not to certify a document.
 - **It does not verify content.** It never checks that a governing document says
   what you remember, that a `relevance` is honest, or that an item's text
   supports the claim citing it. Relevance is taken from the document, which is

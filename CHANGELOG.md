@@ -20,4 +20,9 @@ of the public surface: renaming one is a breaking change and is recorded here.
 - Limits for document size, item count, evidence links, text length, findings
   and run time, each enforced and each reported by name.
 - `--today` for an injected evaluation date, recorded in `summary.today`.
+- Credential redaction at the sanitising boundary: every untrusted string that
+  reaches the report or the human summary -- item ids, source names, JSON
+  Pointer segments, messages and evidence -- has anything matching a published
+  credential shape replaced with a placeholder naming the shape, before any
+  length bound is applied.
 - Examples: `examples/assembled` (exit 0) and `examples/stale` (exit 1).

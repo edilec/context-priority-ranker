@@ -47,8 +47,8 @@ export {
   relevancePoints, todayFromClock,
 } from './score.mjs'
 export {
-  CONTROL_CLASSES, byCodeUnit, decodeUtf8, escapePointerSegment, excerpt, hasForbiddenCharacter,
-  isPlainObject, parseFailureDetail, renderable,
+  CONTROL_CLASSES, CREDENTIAL_PATTERNS, byCodeUnit, decodeUtf8, escapePointerSegment, excerpt,
+  hasForbiddenCharacter, isPlainObject, parseFailureDetail, redactCredentials, renderable,
 } from './text.mjs'
 
 export const TOOL_ID = 'context-priority-ranker'

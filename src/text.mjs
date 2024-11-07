@@ -85,6 +85,52 @@ export const CONTROL_CLASSES = Object.freeze({
   bidi: Object.freeze([0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069]),
 })
 
+/**
+ * Credential shapes, each a published prefix format rather than a guess.
+ *
+ * A fixed list, not a secret scanner: no entropy heuristic, no allowlist and no
+ * verification step, so it misses a bespoke token and it flags a documentation
+ * example. Both are stated in the README. It is here to catch the realistic
+ * accident -- a context set assembled from a pasted command line, or an item id
+ * that is really an access key -- not to certify that a document is clean.
+ *
+ * Copied rather than imported: the catalog publishes no shared package, and
+ * this tool declares no dependencies of any kind.
+ */
+export const CREDENTIAL_PATTERNS = Object.freeze([
+  Object.freeze({ id: 'aws-access-key-id', pattern: /\b(?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA|ANVA)[0-9A-Z]{16}\b/ }),
+  Object.freeze({ id: 'private-key-block', pattern: /-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----/ }),
+  Object.freeze({ id: 'github-token', pattern: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}\b/ }),
+  Object.freeze({ id: 'github-fine-grained-token', pattern: /\bgithub_pat_[A-Za-z0-9_]{22,}\b/ }),
+  Object.freeze({ id: 'slack-token', pattern: /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/ }),
+  Object.freeze({ id: 'google-api-key', pattern: /\bAIza[0-9A-Za-z_-]{35}\b/ }),
+  Object.freeze({ id: 'npm-token', pattern: /\bnpm_[A-Za-z0-9]{36}\b/ }),
+  Object.freeze({ id: 'json-web-token', pattern: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/ }),
+  Object.freeze({ id: 'authorization-header', pattern: /\bauthorization\s*[:=]\s*(?:bearer|basic|token)\s+\S{6,}/i }),
+  Object.freeze({ id: 'secret-assignment', pattern: /\b(?:password|passwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|private[_-]?key|client[_-]?secret)\s*[:=]\s*["']?[^\s"'&]{6,}/i }),
+])
+
+/** Each pattern again with the global flag, derived so the two cannot drift apart. */
+const REDACTORS = CREDENTIAL_PATTERNS.map(({ id, pattern }) => ({
+  id, global: new RegExp(pattern.source, `${pattern.flags}g`),
+}))
+
+/**
+ * Replace anything credential-shaped with a placeholder naming the shape.
+ *
+ * A context set is assembled from retrieved material, pasted commands and
+ * whatever an agent had in hand, and this tool reproduces parts of it: an item
+ * id and a source name reach `ranking` and the human summary, and an unmapped
+ * source name reaches a finding's message and its evidence. The house contract
+ * says a report never emits a credential, so every one of those routes goes
+ * through `excerpt`, and `excerpt` goes through here.
+ */
+export function redactCredentials(text) {
+  let result = renderable(text)
+  for (const { id, global } of REDACTORS) result = result.replace(global, `[redacted ${id}]`)
+  return result
+}
+
 export const EXCERPT_LIMIT = 160
 
 /**
@@ -115,15 +161,24 @@ export function renderable(value) {
 }
 
 /**
- * A bounded, single-line, control-free rendering of an untrusted value.
+ * A bounded, single-line, control-free, credential-redacted rendering of an
+ * untrusted value.
  *
  * Everything that came out of a context set passes through here on its way to
  * the report: item ids, source names, titles, relative paths, JSON Pointer
- * segments, ranking entries and text excerpts alike.
+ * segments, ranking entries and text excerpts alike. It is the one boundary,
+ * which is why the redaction and the shape-description both live here rather
+ * than at each call site -- a call site that forgot is how this tool echoed an
+ * item id shaped like an access key straight into stdout.
+ *
+ * Order matters twice. Controls are flattened before redaction so a credential
+ * split by one is not reassembled, and redaction happens before truncation so
+ * the bound applies to what is actually emitted and no cut can land inside a
+ * credential.
  */
 export function excerpt(value, limit = EXCERPT_LIMIT) {
   if (!Number.isInteger(limit) || limit < 1) throw new TypeError('Excerpt limit must be a positive integer')
-  const flattened = renderable(value).replace(CONTROL, ' ').replace(/\s+/g, ' ').trim()
+  const flattened = redactCredentials(renderable(value).replace(CONTROL, ' ').replace(/\s+/g, ' ').trim())
   if (flattened.length <= limit) return flattened
   return `${flattened.slice(0, limit)}...`
 }
