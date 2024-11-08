@@ -88,7 +88,9 @@ data, and it is treated as adversarial.
 }
 ```
 
-An unknown policy key is refused, not ignored. A high-authority band may not set
+An unknown policy key is refused, not ignored -- `limits` included, because the
+parser bounds belong to the run rather than to the authority map and are set
+from the command line. A high-authority band may not set
 `reviewAfterDays: null`: the band whose staleness matters most would otherwise be
 the easiest to silence.
 

@@ -43,6 +43,53 @@ test('mistyped policy keys are refused rather than ignored', () => {
   )
 })
 
+/**
+ * `limits` was listed as a known policy key and read by nothing, so a policy
+ * file could declare `"limits": {"maxItems": 1}` and be accepted in silence
+ * while the run used the defaults -- and the refusal message for a real typo
+ * advertised the key. This is the behavioural pin: the refusal, through the
+ * real CLI, with the empty stdout that a configuration error owes.
+ */
+test('a policy that declares limits is refused, not accepted and ignored', async (t) => {
+  assert.throws(
+    () => validatePolicy({ ...BASE_POLICY, limits: { maxItems: 1 } }),
+    /Policy key "limits" is not read by this tool/,
+  )
+  assert.throws(() => validatePolicy({ ...BASE_POLICY, limits: 'nonsense' }), /not read by this tool/)
+  let typoMessage = ''
+  try {
+    validatePolicy({ ...BASE_POLICY, limitz: 1 })
+  } catch (error) {
+    typoMessage = error.message
+  }
+  assert.match(typoMessage, /Unknown policy key "limitz"/)
+  assert.ok(!typoMessage.includes('limits'), 'the unknown-key message still advertises limits as a known key')
+
+  const dir = await workspace(t)
+  await fixture(dir, {
+    policy: { ...BASE_POLICY, limits: { maxItems: 1, utterNonsense: true } },
+    set: { items: [governingItem(), governingItem({ id: 'second' })] },
+  })
+  const result = await run(['--root', dir, '--policy', join(dir, POLICY_NAME), '--today', '2026-09-14'])
+
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '', 'a configuration error never had a subject to report about')
+  assert.match(result.stderr, /limits are command-line options/)
+})
+
+test('the limits that do exist are reached from the command line, not from the policy', async (t) => {
+  const dir = await workspace(t)
+  await fixture(dir, { set: { items: [governingItem(), governingItem({ id: 'second' })] } })
+  const result = await run([
+    '--root', dir, '--policy', join(dir, POLICY_NAME), '--today', '2026-09-14', '--max-items', '1',
+  ])
+
+  assert.equal(result.code, 2)
+  const report = JSON.parse(result.stdout)
+  assert.equal(report.status, 'incomplete')
+  assert.ok(report.findings.some((finding) => finding.ruleId === 'too-many-items'))
+})
+
 test('weights and intervals are checked for sense', () => {
   assert.throws(
     () => validatePolicy({ ...BASE_POLICY, weights: { relevance: 0, freshness: 0, evidence: 0 } }),

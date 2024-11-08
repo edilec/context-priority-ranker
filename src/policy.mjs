@@ -71,7 +71,24 @@ export const DEFAULT_POLICY = Object.freeze({
   }),
 })
 
-const ALLOWED_POLICY_KEYS = Object.freeze(['authority', 'bands', 'evidenceSaturation', 'limits', 'weights'])
+/**
+ * Members a policy document may carry.
+ *
+ * `limits` is deliberately not one of them. It was listed here for one release
+ * candidate and read by nothing: a policy file could declare
+ * `"limits": {"maxItems": 1}` -- or `"limits": "nonsense"` -- and be accepted in
+ * silence while the run used the defaults, which is the "documented limit never
+ * enforced" defect with the documentation left out. Parser bounds are command
+ * line options (`--max-items` and the rest) because they are a property of the
+ * run, not of the authority map. A policy file that names one is refused, with
+ * a message that says where the limits really live.
+ */
+const ALLOWED_POLICY_KEYS = Object.freeze(['authority', 'bands', 'evidenceSaturation', 'weights'])
+
+/** Keys refused with a better sentence than "unknown". */
+const REDIRECTED_POLICY_KEYS = Object.freeze({
+  limits: 'limits are command-line options (--max-document-bytes, --max-evidence-links, --max-findings, --max-items, --max-runtime-ms, --max-text-chars), not policy keys',
+})
 const ALLOWED_BAND_KEYS = Object.freeze(['expireAfterDays', 'freshnessHorizonDays', 'reviewAfterDays'])
 const WEIGHT_KEYS = Object.freeze(['evidence', 'freshness', 'relevance'])
 
@@ -102,6 +119,9 @@ function positiveInteger(value, label, maximum = MAX_DAYS) {
 export function validatePolicy(raw = {}) {
   if (!isPlainObject(raw)) fail('The policy must be a JSON object')
   for (const key of Object.keys(raw).sort(byCodeUnit)) {
+    if (Object.hasOwn(REDIRECTED_POLICY_KEYS, key)) {
+      fail(`Policy key "${key}" is not read by this tool: ${REDIRECTED_POLICY_KEYS[key]}`)
+    }
     if (!ALLOWED_POLICY_KEYS.includes(key)) {
       fail(`Unknown policy key "${excerpt(key, 60)}"; known keys are ${ALLOWED_POLICY_KEYS.join(', ')}`)
     }

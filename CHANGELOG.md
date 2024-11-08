@@ -14,7 +14,9 @@ of the public surface: renaming one is a breaking change and is recorded here.
   (warning) past `reviewAfterDays`, `expired-high-authority-context` (error)
   past `expireAfterDays`.
 - Policy validation with unknown-key refusal, and a refusal to switch off the
-  review interval of a high-authority band.
+  review interval of a high-authority band. `limits` is not a policy key: the
+  parser bounds are command-line options, and a policy file that names one is
+  refused rather than accepted and ignored.
 - Thirty-four rules with a frozen severity table, documented in
   `docs/ranking-rules.md`.
 - Limits for document size, item count, evidence links, text length, findings
