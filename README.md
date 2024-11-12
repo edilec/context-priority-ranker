@@ -279,6 +279,12 @@ class that forges or hides output is driven through an identifier as well as an
 excerpt; and the parse-failure helper is tested against the document that reads
 `at position 1`, which is how the rest of this catalog found that bug.
 
+"Does not fetch, execute or write" is checked twice over, because either check
+alone is weak: a source scan for the call forms, and a run over a real workspace
+that asserts every file in it is byte-for-byte and mtime-for-mtime as it was
+found. A write that evades the needle list fails the second; a write to
+somewhere else on the machine fails the first.
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).
