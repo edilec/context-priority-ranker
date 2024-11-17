@@ -194,7 +194,7 @@ behaviour.
 
 ## Rules
 
-Thirty-four rule ids, each with a fixed severity, listed in
+Thirty-five rule ids, each with a fixed severity, listed in
 [docs/ranking-rules.md](./docs/ranking-rules.md). The ones that carry the
 tool's purpose:
 
@@ -206,6 +206,7 @@ tool's purpose:
 | `expired-high-authority-context` | error | A governing or trusted item is past its expiry. |
 | `untrusted-authority-claim` | warning | An untrusted item's text asserts authority. It changes nothing about the ranking. |
 | `high-authority-evidence-untrusted` | warning | A high-authority item rests on an untrusted one. |
+| `evidence-link-unscored` | error | A cited item is in the set and could not be scored. Its support is unknown, and the report says so rather than calling it absent. |
 | `no-governing-context` | warning | Nothing maps to the governing band, so the ranking has no instruction floor. |
 
 ## Exit codes

@@ -104,6 +104,7 @@ export const RULE_SEVERITY = Object.freeze({
   'evidence-invalid': 'error',
   'evidence-link-self': 'warning',
   'evidence-link-unresolved': 'warning',
+  'evidence-link-unscored': 'error',
   'expired-high-authority-context': 'error',
   'freshness-unknown': 'error',
   'high-authority-evidence-untrusted': 'warning',
@@ -395,6 +396,7 @@ function compileItem(run, policy, limits, item, index) {
     compiled.scored = false
   }
   compiled.id = idUsable ? rawId : `items[${index}]`
+  compiled.idDeclared = idUsable
 
   for (const field of RESERVED_ITEM_FIELDS) {
     if (Object.hasOwn(item, field)) {
@@ -584,7 +586,20 @@ function checkAuthorityClaims(run, compiled) {
   }
 }
 
-function resolveEvidence(run, compiled, byId) {
+/**
+ * Count the evidence links that resolve to a scored item, and say what happened
+ * to the ones that did not.
+ *
+ * The distinction between the two failures is the point. "Names no item in this
+ * context set" is a statement of absence, and it was being made about ids that
+ * were present and merely unscored -- an item with one misspelt field silently
+ * became an item that does not exist. That is the forbidden shape: reporting
+ * "no X was supplied" when an X was supplied and could not be read. A present
+ * but unscored target is unknown support, not absent support, so it marks the
+ * run incomplete rather than letting a reader conclude the citation was
+ * dangling.
+ */
+function resolveEvidence(run, compiled, byId, declaredIds) {
   let supported = 0
   for (const link of compiled.evidence) {
     if (link.id === compiled.id) {
@@ -598,12 +613,22 @@ function resolveEvidence(run, compiled, byId) {
     }
     const target = byId.get(link.id)
     if (target === undefined) {
-      run.add({
-        pointer: `${compiled.pointer}/evidence/${link.position}`,
-        ruleId: 'evidence-link-unresolved',
-        message: `Evidence link "${excerpt(link.id, 60)}" names no item in this context set, so it counts as no support.`,
-        suggestion: 'Include the cited item in the set, or remove the link.',
-      })
+      const present = declaredIds.get(link.id)
+      if (present === undefined) {
+        run.add({
+          pointer: `${compiled.pointer}/evidence/${link.position}`,
+          ruleId: 'evidence-link-unresolved',
+          message: `Evidence link "${excerpt(link.id, 60)}" names no item in this context set, so it counts as no support.`,
+          suggestion: 'Include the cited item in the set, or remove the link.',
+        })
+      } else {
+        run.addUnknown({
+          pointer: `${compiled.pointer}/evidence/${link.position}`,
+          ruleId: 'evidence-link-unscored',
+          message: `Evidence link "${excerpt(link.id, 60)}" names the item at ${present}, which could not be scored, so whether it supports this one is unknown. It is present in the set; it is not counted as support and it is not reported as missing.`,
+          suggestion: 'Fix what is already reported against that item, then rank the set again.',
+        })
+      }
       continue
     }
     supported += 1
@@ -872,6 +897,15 @@ export async function rankContext(options = {}) {
   state.items = document.items.length
   const compiled = []
   const byId = new Map()
+  /**
+   * Every id the document declares, scored or not, with where it was declared.
+   *
+   * Kept apart from `byId`, which holds only the items that were scored and is
+   * what an evidence link may actually resolve to. This map is what lets the
+   * report tell "no item has that id" apart from "that item is right there and
+   * could not be read".
+   */
+  const declaredIds = new Map()
 
   for (const [index, item] of document.items.entries()) {
     /**
@@ -906,6 +940,7 @@ export async function rankContext(options = {}) {
         row.scored = false
       } else byId.set(row.id, row)
     }
+    if (row.idDeclared && !declaredIds.has(row.id)) declaredIds.set(row.id, row.pointer)
   }
 
   for (const row of compiled) {
@@ -952,7 +987,7 @@ export async function rankContext(options = {}) {
       }
     }
 
-    const supported = resolveEvidence(run, row, byId)
+    const supported = resolveEvidence(run, row, byId, declaredIds)
     const components = {
       relevance: relevancePoints(row.relevance),
       freshness: freshnessPoints(ageDays, bandPolicy.freshnessHorizonDays),

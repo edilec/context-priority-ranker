@@ -18,6 +18,7 @@ asserts the emitted severity word, the report status and the process exit code.
 | `evidence-invalid` | error | `evidence` is not an array of item id strings. |
 | `evidence-link-self` | warning | An item cites itself. The link is not counted as support. |
 | `evidence-link-unresolved` | warning | An evidence link names no item in this set. It is not counted as support. |
+| `evidence-link-unscored` | error | An evidence link names an item that IS in this set and could not be scored. The support is unknown, not absent, so the run is incomplete. |
 | `expired-high-authority-context` | error | A governing or trusted item is older than its band's `expireAfterDays`. It still outranks every lower band, which is why this is an error. |
 | `freshness-unknown` | error | The item declares no `updated` date. The run is incomplete; an undated document is not a fresh document. |
 | `high-authority-evidence-untrusted` | warning | A governing or trusted item rests on an untrusted item. The support is counted; the chain is reported. |
@@ -49,12 +50,12 @@ asserts the emitted severity word, the report status and the process exit code.
 
 ## Which rules make a run incomplete
 
-`authority-unknown`, `freshness-unknown`, `input-not-json`, `input-not-utf8`,
-`input-too-large`, `input-unreadable`, `item-text-too-long`,
-`path-escapes-root`, `relevance-missing`, `schema-version-unsupported`,
-`time-budget-exceeded`, `too-many-evidence-links`, `too-many-findings`,
-`too-many-items` and `updated-invalid` all mean the tool wanted a fact and did
-not get it. Each marks the run `incomplete`, exits 2 and suppresses the ranking.
+`authority-unknown`, `evidence-link-unscored`, `freshness-unknown`,
+`input-not-json`, `input-not-utf8`, `input-too-large`, `input-unreadable`,
+`item-text-too-long`, `path-escapes-root`, `relevance-missing`,
+`schema-version-unsupported`, `time-budget-exceeded`,
+`too-many-evidence-links`, `too-many-findings`, `too-many-items` and
+`updated-invalid` all mean the tool wanted a fact and did not get it. Each marks the run `incomplete`, exits 2 and suppresses the ranking.
 
 The rest are facts the tool *did* obtain about a document that is wrong. They
 fail the run (exit 1) and, where every item still scored, the ranking is

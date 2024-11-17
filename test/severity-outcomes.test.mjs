@@ -67,6 +67,20 @@ const CASES = [
     build: (dir) => fixture(dir, { set: { items: [governingItem({ evidence: ['absent-item'] })] } }),
   },
   {
+    ruleId: 'evidence-link-unscored',
+    severity: 'error',
+    status: 'incomplete',
+    exit: 2,
+    build: (dir) => fixture(dir, {
+      set: {
+        items: [
+          governingItem({ evidence: ['cited-item'] }),
+          governingItem({ id: 'cited-item', misspelt: 'x' }),
+        ],
+      },
+    }),
+  },
+  {
     ruleId: 'expired-high-authority-context',
     severity: 'error',
     status: 'fail',
