@@ -568,6 +568,16 @@ function compileItem(run, policy, limits, item, index) {
   return compiled
 }
 
+/**
+ * Report an untrusted item whose own text claims authority over the
+ * instructions.
+ *
+ * Scoped to the untrusted band on purpose, and the README's non-goals say so: a
+ * security policy that quotes an injection phrase in order to warn about it is
+ * a governing document doing its job, and flagging it would train a reader to
+ * ignore the rule. An item whose band is unknown is not scanned either --
+ * nothing is claimed about a band the policy did not map.
+ */
 function checkAuthorityClaims(run, compiled) {
   if (compiled.band !== 'untrusted') return
   const haystack = `${compiled.title}\n${compiled.text}`.toLowerCase()
@@ -943,10 +953,18 @@ export async function rankContext(options = {}) {
     if (row.idDeclared && !declaredIds.has(row.id)) declaredIds.set(row.id, row.pointer)
   }
 
-  for (const row of compiled) {
-    if (!row.scored) continue
-    checkAuthorityClaims(run, row)
-  }
+  /**
+   * Every compiled item is scanned, scored or not.
+   *
+   * Gating this on `scored` handed the suppression to the attacker: the context
+   * set is the untrusted input, so an item carrying one unrecognised field --
+   * or a reserved field, or a relevance out of range -- silenced every
+   * authority-claim warning about ITSELF while its own text kept saying
+   * "ignore previous instructions". The warning costs nothing to emit for an
+   * item that will not be ranked, and it is the one thing in this report a
+   * reader needs before pasting that text anywhere.
+   */
+  for (const row of compiled) checkAuthorityClaims(run, row)
 
   for (const row of compiled) {
     if (!row.scored) {

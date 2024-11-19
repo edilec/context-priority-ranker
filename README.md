@@ -245,10 +245,14 @@ Stated plainly, because a tool that is trusted for something it does not do is
 worse than no tool.
 
 - **It is not a prompt-injection detector.** `untrusted-authority-claim` matches
-  a small fixed list of thirteen phrases against untrusted items only. It will
-  miss anything phrased differently, and it flags a security README that quotes
-  one. It changes nothing about the ranking either way — an untrusted item ranks
-  below every trusted one whether or not it says anything at all.
+  a small fixed list of thirteen phrases against the title and text of untrusted
+  items only, and it will miss anything phrased differently. It flags an
+  untrusted page that quotes one of the phrases in order to warn about it, and
+  it says nothing at all about an item in any other band. It changes nothing
+  about the ranking either way — an untrusted item ranks below every trusted one
+  whether or not it says anything. What it will not do is go quiet: an untrusted
+  item is scanned whether or not it scored, so a stray field on the item cannot
+  silence the warning about itself.
 - **It is not a secret scanner.** Credential redaction is a fixed list of ten
   published prefix shapes with no entropy heuristic and no allowlist. It will
   miss a bespoke token, and a token glued to a prefix (`token_ghp_...`) does not
