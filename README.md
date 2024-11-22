@@ -175,6 +175,12 @@ The replacement happens before any length bound is applied, so no truncation can
 cut a credential back into the report. A redacted id no longer matches the id in
 your input; that is the trade, and it is the right way round.
 
+`summary.stale` counts every ranked item past its band's `reviewAfterDays`, and
+`summary.expired` counts the subset of those also past `expireAfterDays` — a
+policy may not set an expiry earlier than its review interval, so every expired
+item is a stale one. `summary.stale` is always the number of `ranking` entries
+whose `stale` flag is `true`.
+
 Findings sort by `(location.file, location.pointer, ruleId, message)`. Pointers
 compare as strings, so `/items/10` precedes `/items/9`. The ranking sorts by
 `(band rank, score descending, id)`. All comparisons are by UTF-16 code unit;

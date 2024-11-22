@@ -985,24 +985,42 @@ export async function rankContext(options = {}) {
       })
     }
 
-    if (isHighAuthority(row.band) && ageDays > 0) {
-      if (bandPolicy.expireAfterDays !== null && ageDays > bandPolicy.expireAfterDays) {
-        state.expired += 1
-        run.add({
-          pointer: `${row.pointer}/updated`,
-          ruleId: 'expired-high-authority-context',
-          message: `${row.band} item "${excerpt(row.id, 60)}" was last updated ${row.updated}, ${ageDays} days ago, past its expireAfterDays of ${bandPolicy.expireAfterDays}. It still outranks every lower band, which is why an expired one is an error rather than a note.`,
-          suggestion: 'Re-confirm the document against the current system, then update its "updated" date.',
-        })
-      } else if (bandPolicy.reviewAfterDays !== null && ageDays > bandPolicy.reviewAfterDays) {
-        state.stale += 1
-        run.add({
-          pointer: `${row.pointer}/updated`,
-          ruleId: 'stale-high-authority-context',
-          message: `${row.band} item "${excerpt(row.id, 60)}" was last updated ${row.updated}, ${ageDays} days ago, past its reviewAfterDays of ${bandPolicy.reviewAfterDays}. High-authority context is obeyed whether or not it is still true; this one is due for review.`,
-          suggestion: 'Review the document and refresh its "updated" date, or lower its band in the policy.',
-        })
-      }
+    /**
+     * One predicate, two consumers.
+     *
+     * `summary.stale` used to count only the items that took the else-branch
+     * below, while `ranking[].stale` was computed separately as "past review".
+     * An expired item is past review by construction -- the policy refuses an
+     * `expireAfterDays` earlier than `reviewAfterDays` -- so the report
+     * contradicted itself: `summary.stale: 0` beside `ranking[0].stale: true`
+     * and a human line reading "(stale)". A consumer counting
+     * `ranking.filter(entry => entry.stale)` got a different answer from the
+     * summary of the same run.
+     *
+     * So `expired` is now the subset of `stale` that is also past expiry, both
+     * counted from the same two booleans, and the README says which is which.
+     */
+    const pastReview = isHighAuthority(row.band) && bandPolicy.reviewAfterDays !== null
+      && ageDays > bandPolicy.reviewAfterDays
+    const pastExpiry = isHighAuthority(row.band) && bandPolicy.expireAfterDays !== null
+      && ageDays > bandPolicy.expireAfterDays
+    if (pastReview) state.stale += 1
+    if (pastExpiry) state.expired += 1
+
+    if (pastExpiry) {
+      run.add({
+        pointer: `${row.pointer}/updated`,
+        ruleId: 'expired-high-authority-context',
+        message: `${row.band} item "${excerpt(row.id, 60)}" was last updated ${row.updated}, ${ageDays} days ago, past its expireAfterDays of ${bandPolicy.expireAfterDays}. It still outranks every lower band, which is why an expired one is an error rather than a note.`,
+        suggestion: 'Re-confirm the document against the current system, then update its "updated" date.',
+      })
+    } else if (pastReview) {
+      run.add({
+        pointer: `${row.pointer}/updated`,
+        ruleId: 'stale-high-authority-context',
+        message: `${row.band} item "${excerpt(row.id, 60)}" was last updated ${row.updated}, ${ageDays} days ago, past its reviewAfterDays of ${bandPolicy.reviewAfterDays}. High-authority context is obeyed whether or not it is still true; this one is due for review.`,
+        suggestion: 'Review the document and refresh its "updated" date, or lower its band in the policy.',
+      })
     }
 
     const supported = resolveEvidence(run, row, byId, declaredIds)
@@ -1022,7 +1040,7 @@ export async function rankContext(options = {}) {
       components,
       evidenceResolved: supported,
       ageDays,
-      stale: isHighAuthority(row.band) && bandPolicy.reviewAfterDays !== null && ageDays > bandPolicy.reviewAfterDays,
+      stale: pastReview,
       explanation: excerpt(
         `${row.band} band (rank ${row.bandRank}) decides the position before any score; `
         + `relevance ${components.relevance}/${POINT_SCALE} x${policy.weights.relevance}, `

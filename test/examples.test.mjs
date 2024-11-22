@@ -41,7 +41,10 @@ test('the stale example fails on an expired governing document', async () => {
   const report = JSON.parse(result.stdout)
   assert.equal(report.status, 'fail')
   assert.equal(report.summary.expired, 1)
-  assert.equal(report.summary.stale, 1)
+  // Two: the expired governing baseline and the trusted runbook. An expired
+  // item is past its review interval by construction, so it counts in both.
+  assert.equal(report.summary.stale, 2)
+  assert.equal(report.summary.stale, report.ranking.filter((entry) => entry.stale).length)
   assert.ok(report.findings.some((finding) => finding.ruleId === 'expired-high-authority-context'))
   assert.ok(report.findings.some((finding) => finding.ruleId === 'stale-high-authority-context'))
 

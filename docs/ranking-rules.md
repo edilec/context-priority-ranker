@@ -39,7 +39,7 @@ asserts the emitted severity word, the report status and the process exit code.
 | `relevance-out-of-range` | error | `relevance` is not a finite number between 0 and 1. |
 | `schema-version-unsupported` | error | The document declares a `schemaVersion` this build does not understand. It was not interpreted. |
 | `source-missing` | error | The item declares no `source`, so the policy has nothing to map. |
-| `stale-high-authority-context` | warning | A governing or trusted item is past its band's `reviewAfterDays`. Flagged for review. |
+| `stale-high-authority-context` | warning | A governing or trusted item is past its band's `reviewAfterDays` and not yet past its expiry. Flagged for review. |
 | `time-budget-exceeded` | error | `maxRuntimeMs` expired mid-run. The remaining items were not examined and no ranking was produced. |
 | `too-many-evidence-links` | error | One item declares more links than `maxEvidenceLinks`. None were resolved. |
 | `too-many-findings` | error | The report reached `maxFindings`. It is partial, and therefore incomplete. |

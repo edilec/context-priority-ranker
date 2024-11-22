@@ -161,6 +161,35 @@ test('a trusted item is flagged on its own band interval, not the governing one'
   assert.match(finding.message, /reviewAfterDays of 180/)
 })
 
+/**
+ * The summary and the ranking are two views of one run, and they used to
+ * disagree: `summary.stale` counted only the items that took the else-branch,
+ * so an expired item was `stale: true` in the ranking, printed "(stale)" on
+ * stderr, and was invisible in `summary.stale: 0`. A consumer counting
+ * `ranking.filter(entry => entry.stale)` got 1 where the summary said 0.
+ */
+test('summary.stale counts exactly the ranked items the ranking calls stale', async (t) => {
+  const dir = await workspace(t)
+  await fixture(dir, {
+    set: {
+      items: [
+        governingItem({ id: 'expired-policy', updated: '2024-01-05' }),
+        { id: 'runbook', source: 'repository-doc', relevance: 0.5, updated: '2026-02-01' },
+        { id: 'current-note', source: 'repository-doc', relevance: 0.5, updated: '2026-09-01' },
+      ],
+    },
+  })
+
+  const { report } = await rank(dir)
+  const flagged = report.ranking.filter((entry) => entry.stale).map((entry) => entry.id).sort()
+
+  assert.deepEqual(flagged, ['expired-policy', 'runbook'])
+  assert.equal(report.summary.stale, 2, 'the expired item is past its review interval too')
+  assert.equal(report.summary.stale, flagged.length)
+  assert.equal(report.summary.expired, 1, 'expired is the subset of stale that is also past expiry')
+  assert.equal(report.ranking.find((entry) => entry.id === 'current-note').stale, false)
+})
+
 test('a governing item past its expiry is an error and fails the run', async (t) => {
   const dir = await workspace(t)
   await fixture(dir, { set: { items: [governingItem({ updated: '2024-01-05' })] } })
