@@ -9,7 +9,7 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { DEFAULT_LIMITS, HARD_LIMITS, rankContext, validateLimits } from '../src/index.mjs'
+import { DEFAULT_LIMITS, EXCERPT_LIMIT, HARD_LIMITS, excerpt, rankContext, validateLimits } from '../src/index.mjs'
 import { BASE_POLICY, POLICY_NAME, fixture, governingItem, run, untrustedItem, workspace } from './support.mjs'
 
 const LIMIT_CASES = [
@@ -142,4 +142,66 @@ test('an oversized document is reported by size, not truncated to what fits', as
   assert.match(report.findings[0].message, /It was not parsed/)
   assert.equal(report.summary.items, 0)
   assert.equal(result.code, 2)
+})
+
+
+/**
+ * The output bound, which is a limit like any other and was defended by
+ * nothing.
+ *
+ * The house contract calls evidence "length-bounded" and this tool's own README
+ * says its excerpts are bounded. Removing the length check from excerpt() left
+ * the whole suite green while a single finding carried a 50,008-character
+ * evidence string -- nothing asserted a maximum length on any emitted string.
+ *
+ * Both halves are here: the function at its own boundary, and every string in a
+ * real report driven from a document built to be long in each place an
+ * untrusted value reaches output.
+ */
+test('excerpt bounds what it returns, and does not truncate what already fits', () => {
+  assert.equal(excerpt('x'.repeat(EXCERPT_LIMIT)), 'x'.repeat(EXCERPT_LIMIT), 'a value at the limit is emitted whole')
+  assert.equal(excerpt('x'.repeat(EXCERPT_LIMIT + 1)).length, EXCERPT_LIMIT + 3)
+  assert.ok(excerpt('x'.repeat(EXCERPT_LIMIT + 1)).endsWith('...'))
+  assert.equal(excerpt('x'.repeat(5000), 40).length, 43)
+  assert.equal(excerpt('short', 40), 'short')
+  assert.throws(() => excerpt('x', 0), /positive integer/)
+})
+
+/** The widest string the report may carry: the message limit plus an ellipsis. */
+const OUTPUT_LIMIT = 403
+
+function stringsOf(value, found = []) {
+  if (typeof value === 'string') found.push(value)
+  else if (Array.isArray(value)) for (const entry of value) stringsOf(entry, found)
+  else if (value !== null && typeof value === 'object') for (const entry of Object.values(value)) stringsOf(entry, found)
+  return found
+}
+
+test('no string in a report is longer than the widest documented bound', async (t) => {
+  const dir = await workspace(t)
+  const long = 'q'.repeat(50000)
+  await fixture(dir, {
+    set: {
+      items: [
+        governingItem({ updated: long }),
+        { ...governingItem({ id: 'second' }), [`unknown_${'k'.repeat(400)}`]: 'x' },
+        governingItem({ id: 'third', source: `unmapped-${long}` }),
+        governingItem({ id: 'fourth', evidence: ['e'.repeat(119)] }),
+      ],
+      [`document_${'d'.repeat(400)}`]: 'x',
+    },
+  })
+  const result = await run(['--root', dir, '--policy', join(dir, POLICY_NAME), '--today', '2026-09-14'])
+  const report = JSON.parse(result.stdout)
+
+  assert.ok(report.findings.length >= 4, 'the fixture stopped producing the findings it was built for')
+  for (const value of stringsOf(report)) {
+    assert.ok(
+      value.length <= OUTPUT_LIMIT,
+      `a report string ran to ${value.length} characters: ${value.slice(0, 80)}...`,
+    )
+  }
+  for (const line of result.stderr.split('\n')) {
+    assert.ok(line.length <= OUTPUT_LIMIT + 20, `a human summary line ran to ${line.length} characters`)
+  }
 })
