@@ -7,6 +7,7 @@
  */
 
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -51,4 +52,30 @@ test('the stale example fails on an expired governing document', async () => {
   // Every item still scored, so the ranking is emitted alongside the failure.
   assert.equal(report.summary.rankingProduced, true)
   assert.equal(report.ranking[0].id, 'security-baseline')
+})
+
+
+/** Ranking and finding lines from a human summary, with their padding collapsed. */
+function summaryLines(text) {
+  return text.split('\n')
+    .map((line) => line.trim().replace(/\s+/g, ' '))
+    .filter((line) => /^\d+\. \[/.test(line) || /^(ERROR|WARN|INFO) /.test(line))
+}
+
+/**
+ * The README's example block is output, and output is a contract.
+ *
+ * It showed one authority-claim warning where the tool emits two, while its own
+ * JSON sample two sections later said `"warnings": 2`. Comparing the block
+ * against a real run is the only version of this claim that cannot drift.
+ */
+test('the README prints the passing example exactly as the tool does', async () => {
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8')
+  const result = await run(['--root', ASSEMBLED, '--policy', POLICY, '--today', '2026-09-14'])
+
+  const documented = summaryLines(readme)
+  const emitted = summaryLines(result.stderr)
+
+  assert.equal(emitted.length, 7, 'the example stopped producing five ranked items and two warnings')
+  assert.deepEqual(documented, emitted, 'README.md shows a different summary from the CLI')
 })

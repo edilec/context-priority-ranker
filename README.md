@@ -52,7 +52,13 @@ untrusted vendor page scores 795 to its 546 and its own text demands priority:
   4. [reference] queueing-notes - 570/1000
   5. [untrusted] vendor-status-page - 795/1000
   WARN   untrusted-authority-claim  context-set.json/items/4
+  WARN   untrusted-authority-claim  context-set.json/items/4
 ```
+
+Two warnings, because the page uses two of the listed phrases. The finding lines
+are ordered by `(file, pointer, ruleId, message)` rather than by severity, so a
+report reads against the document. `test/examples.test.mjs` compares this block
+against what the CLI actually prints.
 
 The failing example (`npm run example:failing`, `exit 1`) is a set whose
 governing document was last updated in 2024:
