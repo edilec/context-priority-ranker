@@ -12,7 +12,9 @@ of the public surface: renaming one is a breaking change and is recorded here.
   score inside the band. Relevance cannot move an item across a band.
 - Staleness review for high-authority context: `stale-high-authority-context`
   (warning) past `reviewAfterDays`, `expired-high-authority-context` (error)
-  past `expireAfterDays`.
+  past `expireAfterDays`. `summary.stale` counts every ranked item past its
+  review interval and `summary.expired` the subset also past expiry, so the
+  summary and the `stale` flag on a ranking entry always agree.
 - Policy validation with unknown-key refusal, and a refusal to switch off the
   review interval of a high-authority band. `limits` is not a policy key: the
   parser bounds are command-line options, and a policy file that names one is
@@ -24,6 +26,12 @@ of the public surface: renaming one is a breaking change and is recorded here.
 - Limits for document size, item count, evidence links, text length, findings
   and run time, each enforced and each reported by name.
 - `--today` for an injected evaluation date, recorded in `summary.today`.
+- `untrusted-authority-claim` is emitted for every untrusted item, scored or
+  not, so a stray field on an item cannot silence the warning about itself.
+- A value the document supplies that cannot be rendered as a string -- an object
+  with a non-callable `toString` -- is described by its shape (`[object]`,
+  `[array]`) and the run reports the input as invalid with status `incomplete`,
+  rather than aborting with an empty stdout.
 - Credential redaction at the sanitising boundary: every untrusted string that
   reaches the report or the human summary -- item ids, source names, JSON
   Pointer segments, messages and evidence -- has anything matching a published

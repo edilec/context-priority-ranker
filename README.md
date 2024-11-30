@@ -214,7 +214,7 @@ tool's purpose:
 | --- | --- | --- |
 | `item-declares-authority` | error | An item tried to nominate its own band, rank or score. |
 | `authority-unknown` | error | The policy maps no band to the item's source. Incomplete; no band is assumed. |
-| `stale-high-authority-context` | warning | A governing or trusted item is past its review interval. |
+| `stale-high-authority-context` | warning | A governing or trusted item is past its review interval and not yet past its expiry. |
 | `expired-high-authority-context` | error | A governing or trusted item is past its expiry. |
 | `untrusted-authority-claim` | warning | An untrusted item's text asserts authority. It changes nothing about the ranking. |
 | `high-authority-evidence-untrusted` | warning | A high-authority item rests on an untrusted one. |
