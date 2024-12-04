@@ -248,6 +248,13 @@ const CASES = [
     build: (dir) => fixture(dir, { set: { items: [governingItem({ updated: '2026-01-05' })] } }),
   },
   {
+    ruleId: 'task-invalid',
+    severity: 'error',
+    status: 'fail',
+    exit: 1,
+    build: (dir) => fixture(dir, { set: { task: 42, items: [GOVERNING] } }),
+  },
+  {
     ruleId: 'too-many-evidence-links',
     severity: 'error',
     status: 'incomplete',

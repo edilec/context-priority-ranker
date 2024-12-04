@@ -126,6 +126,7 @@ export const RULE_SEVERITY = Object.freeze({
   'schema-version-unsupported': 'error',
   'source-missing': 'error',
   'stale-high-authority-context': 'warning',
+  'task-invalid': 'error',
   'time-budget-exceeded': 'error',
   'too-many-evidence-links': 'error',
   'too-many-findings': 'error',
@@ -730,6 +731,33 @@ function emptyBands() {
 }
 
 /**
+ * An optional field the document does declare is still a field it declares.
+ *
+ * `task` sat in ALLOWED_DOCUMENT_KEYS and was read by nothing, so `"task": 42`,
+ * `"task": ""`, a task carrying a newline and `"task": {"toString": {}}` all
+ * reported a clean pass. That is the accepted-and-ignored shape -- the same one
+ * this catalog shipped as a policy key and a sibling tool shipped as a packet
+ * field -- and it is worse than an unknown field, because an unknown field is
+ * at least refused.
+ *
+ * Optional means the document may leave it out, not that anything at all may be
+ * written there. Omitting it stays silent, and nothing beyond the shape is
+ * claimed: the task line is for the reader, and this tool does not check that
+ * the items have anything to do with it.
+ */
+function checkOptionalTask(run, document) {
+  if (!Object.hasOwn(document, 'task')) return
+  const value = document.task
+  if (typeof value === 'string' && value.trim().length > 0 && !hasForbiddenCharacter(value)) return
+  run.add({
+    pointer: '/task',
+    ruleId: 'task-invalid',
+    message: 'The document declares "task", but not as a usable line: an optional field that is present must be a non-empty string with no control, separator or bidi character.',
+    suggestion: 'Write "task" as the question this context set was assembled to answer, or omit it.',
+  })
+}
+
+/**
  * Rank a context set against a policy.
  *
  * Returns a report; it throws only for configuration that never gave the run a
@@ -868,6 +896,8 @@ export async function rankContext(options = {}) {
       })
     }
   }
+
+  checkOptionalTask(run, document)
 
   if (!Array.isArray(document.items)) {
     run.add({
