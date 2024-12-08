@@ -19,7 +19,10 @@ of the public surface: renaming one is a breaking change and is recorded here.
   review interval of a high-authority band. `limits` is not a policy key: the
   parser bounds are command-line options, and a policy file that names one is
   refused rather than accepted and ignored.
-- Thirty-five rules with a frozen severity table, documented in
+- `task-invalid`: `task` is optional, which means the document may omit it, not
+  that anything may be written there. A declared `task` that is not a usable
+  line is refused rather than accepted and ignored.
+- Thirty-six rules with a frozen severity table, documented in
   `docs/ranking-rules.md`.
 - `evidence-link-unscored`: a cited item that is present in the set but could
   not be scored is reported as unknown support, never as an absent item.

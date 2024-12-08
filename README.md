@@ -120,6 +120,13 @@ the easiest to silence.
 }
 ```
 
+**Optional is about omitting the field, not about what may go in it.** A
+document that leaves `task` out is silent on the point and passes. One that
+declares `"task": 42`, `"task": ""` or a line carrying a control character fails
+with `task-invalid`, because an accepted-and-ignored field is a field nobody
+reads either. Nothing beyond the shape is claimed: the task line is for the
+reader, and this tool never checks that the items have anything to do with it.
+
 `id`, `source`, `relevance` and `updated` are required on every item.
 `title`, `text` and `evidence` are optional. **An item may not carry `tier`,
 `band`, `bandRank`, `rank`, `priority`, `score` or `authority`** — those are this
@@ -206,7 +213,7 @@ behaviour.
 
 ## Rules
 
-Thirty-five rule ids, each with a fixed severity, listed in
+Thirty-six rule ids, each with a fixed severity, listed in
 [docs/ranking-rules.md](./docs/ranking-rules.md). The ones that carry the
 tool's purpose:
 
