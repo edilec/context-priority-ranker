@@ -55,11 +55,9 @@ test('the stale example fails on an expired governing document', async () => {
 })
 
 
-/** Ranking and finding lines from a human summary, with their padding collapsed. */
+/** Ranking and finding-header lines from a human summary, exactly as written. */
 function summaryLines(text) {
-  return text.split('\n')
-    .map((line) => line.trim().replace(/\s+/g, ' '))
-    .filter((line) => /^\d+\. \[/.test(line) || /^(ERROR|WARN|INFO) /.test(line))
+  return text.split('\n').filter((line) => /^\s*\d+\. \[/.test(line) || /^\s*(ERROR|WARN|INFO) {2}/.test(line))
 }
 
 /**
@@ -68,8 +66,17 @@ function summaryLines(text) {
  * It showed one authority-claim warning where the tool emits two, while its own
  * JSON sample two sections later said `"warnings": 2`. Comparing the block
  * against a real run is the only version of this claim that cannot drift.
+ *
+ * "Exactly" is meant literally, which it was not before: the comparison used to
+ * collapse every run of whitespace, so the block could indent its ranking lines
+ * differently from the tool and still pass a test whose name promised they
+ * matched. Lines are compared character for character now. What the block
+ * leaves out -- the status header, the counts, and the explanation under each
+ * finding -- it leaves out whole, and the assertion below is written as
+ * "a subsequence, in order" so that eliding a line is allowed and rewriting one
+ * is not.
  */
-test('the README prints the passing example exactly as the tool does', async () => {
+test('the README prints the passing example\'s summary lines exactly as the tool emits them', async () => {
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8')
   const result = await run(['--root', ASSEMBLED, '--policy', POLICY, '--today', '2026-09-14'])
 
@@ -77,5 +84,16 @@ test('the README prints the passing example exactly as the tool does', async () 
   const emitted = summaryLines(result.stderr)
 
   assert.equal(emitted.length, 7, 'the example stopped producing five ranked items and two warnings')
+  assert.equal(documented.length, 7, 'README.md no longer shows the whole summary block')
+
+  // Every documented line is an emitted line, byte for byte, in the emitted
+  // order. deepEqual would say the same here; walking it states which line
+  // differs when one does.
+  let next = 0
+  for (const line of documented) {
+    const found = emitted.indexOf(line, next)
+    assert.notEqual(found, -1, `README.md shows a line the CLI does not write: ${JSON.stringify(line)}`)
+    next = found + 1
+  }
   assert.deepEqual(documented, emitted, 'README.md shows a different summary from the CLI')
 })

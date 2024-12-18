@@ -46,19 +46,21 @@ The example ends `exit 0` and ranks the governing policy first, even though the
 untrusted vendor page scores 795 to its 546 and its own text demands priority:
 
 ```
-  1. [governing] operating-policy - 546/1000
-  2. [trusted] runbook-deploy - 630/1000
-  3. [trusted] change-record-2026-08 - 563/1000
-  4. [reference] queueing-notes - 570/1000
-  5. [untrusted] vendor-status-page - 795/1000
+    1. [governing] operating-policy - 546/1000
+    2. [trusted] runbook-deploy - 630/1000
+    3. [trusted] change-record-2026-08 - 563/1000
+    4. [reference] queueing-notes - 570/1000
+    5. [untrusted] vendor-status-page - 795/1000
   WARN   untrusted-authority-claim  context-set.json/items/4
   WARN   untrusted-authority-claim  context-set.json/items/4
 ```
 
 Two warnings, because the page uses two of the listed phrases. The finding lines
 are ordered by `(file, pointer, ruleId, message)` rather than by severity, so a
-report reads against the document. `test/examples.test.mjs` compares this block
-against what the CLI actually prints.
+report reads against the document. Every line above is a line the CLI writes,
+character for character; what is left out is the status header, the counts and
+the explanation each `WARN` line carries underneath it.
+`test/examples.test.mjs` asserts exactly that, so the block cannot drift.
 
 The failing example (`npm run example:failing`, `exit 1`) is a set whose
 governing document was last updated in 2024:
