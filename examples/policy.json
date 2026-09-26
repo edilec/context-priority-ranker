@@ -1,0 +1,16 @@
+{
+  "authority": {
+    "operator-instruction": "governing",
+    "repository-doc": "trusted",
+    "third-party-doc": "reference",
+    "retrieved-web-page": "untrusted"
+  },
+  "weights": { "relevance": 5, "freshness": 3, "evidence": 2 },
+  "evidenceSaturation": 3,
+  "bands": {
+    "governing": { "reviewAfterDays": 90, "expireAfterDays": 365, "freshnessHorizonDays": 365 },
+    "trusted": { "reviewAfterDays": 180, "expireAfterDays": null, "freshnessHorizonDays": 365 },
+    "reference": { "reviewAfterDays": null, "expireAfterDays": null, "freshnessHorizonDays": 730 },
+    "untrusted": { "reviewAfterDays": null, "expireAfterDays": null, "freshnessHorizonDays": 365 }
+  }
+}

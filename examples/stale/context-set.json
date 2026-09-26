@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1",
+  "task": "Answer a question about the data retention rules that apply to exports.",
+  "items": [
+    {
+      "id": "security-baseline",
+      "source": "operator-instruction",
+      "title": "Security baseline, retention section",
+      "relevance": 0.35,
+      "updated": "2024-05-01",
+      "text": "Exports are retained for ninety days and then deleted."
+    },
+    {
+      "id": "retention-runbook",
+      "source": "repository-doc",
+      "title": "Retention runbook",
+      "relevance": 0.6,
+      "updated": "2026-02-10",
+      "evidence": ["security-baseline"],
+      "text": "How the retention job is scheduled and where its log lands."
+    },
+    {
+      "id": "support-article",
+      "source": "retrieved-web-page",
+      "title": "Support article on exports",
+      "relevance": 0.95,
+      "updated": "2026-09-01",
+      "text": "Exports are kept indefinitely unless a customer asks for deletion."
+    }
+  ]
+}
